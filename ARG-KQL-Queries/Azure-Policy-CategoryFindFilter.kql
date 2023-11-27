@@ -1,3 +1,6 @@
+// Type: ARG KQL query
+// Purpose: To find Azure policies of specific category
+// Use at your own discretion. No guarantees provided
 policyresources
 | where type == "microsoft.authorization/policydefinitions"
 //| where ['kind'] in ("policyDefinitions", "policySetDefinitions")
