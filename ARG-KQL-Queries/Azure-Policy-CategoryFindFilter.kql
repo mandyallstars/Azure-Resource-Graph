@@ -1,0 +1,8 @@
+policyresources
+| where type == "microsoft.authorization/policydefinitions"
+//| where ['kind'] in ("policyDefinitions", "policySetDefinitions")
+| extend PropertiesJSON = parse_json(properties)
+| extend Category = tostring(PropertiesJSON.metadata.category)
+| where Category in ('Kubernetes', 'Container Registry')
+| extend PolicyDisplayName = PropertiesJSON.displayName
+| project PolicID=['id'], Category, PolicyDisplayName
