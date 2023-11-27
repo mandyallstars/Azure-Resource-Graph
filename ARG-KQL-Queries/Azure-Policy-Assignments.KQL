@@ -17,7 +17,8 @@ AssignedBy = PropertiesJSON.metadata.assignedBy, PolicyDefinitionId = tostring(P
 //| where ['kind'] in ("policyDefinitions", "policySetDefinitions")
 | extend PropertiesJSON = parse_json(properties)
 | extend Category = tostring(PropertiesJSON.metadata.category)
-| project ['id'], Category) on $left.PolicyDefinitionId == $right.['id']
-| project DisplayName, PolicyID = ['id1'], name, ['kind'], Effect, DefinitionType, Category, resourceGroup, 
+| extend PolicyDisplayName = PropertiesJSON.displayName
+| project ['id'], Category, PolicyDisplayName) on $left.PolicyDefinitionId == $right.['id']
+| project DisplayName, PolicyID = ['id1'], name, PolicyDisplayName, ['kind'], Effect, DefinitionType, Category, resourceGroup, 
 subscriptionId, managedBy, plan, identity, AssignedBy, CreatedOn, CreatedBy, UpdatedOn, UpdatedBy
 //| where Category in ('Kubernetes', 'Container Registry', 'Security Center') //use this filter for further filtering on a specific category of policy assignments.
