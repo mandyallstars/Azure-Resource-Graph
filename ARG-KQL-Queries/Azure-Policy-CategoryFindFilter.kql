@@ -5,4 +5,4 @@ policyresources
 | extend Category = tostring(PropertiesJSON.metadata.category)
 | where Category in ('Kubernetes', 'Container Registry')
 | extend PolicyDisplayName = PropertiesJSON.displayName
-| project PolicID=['id'], Category, PolicyDisplayName
+| project PolicyID=['id'], Category, PolicyDisplayName
