@@ -1,0 +1,20 @@
+// Type: ARG KQL query
+// Purpose: To find list and categories of policies part of a given Azure Policy Initiative
+// Note: replace <initiaitveID> with the ID of the initiative interested in.
+// Use at your own discretion. No guarantees provided
+policyresources
+| where ['id'] == "/providers/Microsoft.Authorization/policySetDefinitions/<initiaitveID>"
+| extend propertiesJSON = parse_json(properties)
+| extend DisplayName = propertiesJSON.displayName
+| extend InitiativeCategory = propertiesJSON.metadata.category
+| extend PolicyDefinitions = propertiesJSON.policyDefinitions
+| mv-expand PolicyDefinitions
+| extend PolicyDefinitionId = tostring(PolicyDefinitions.policyDefinitionId)
+| join kind=leftouter (policyresources
+| where type == "microsoft.authorization/policydefinitions"
+//| where ['kind'] == "policyDefinitions"
+| extend PropertiesJSON = parse_json(properties)
+| extend PolicyCategory = tostring(PropertiesJSON.metadata.category)
+| extend PolicyDisplayName = PropertiesJSON.displayName
+| project tostring(['id']), PolicyCategory, PolicyDisplayName) on $left.PolicyDefinitionId == $right.['id']
+| project InitiativeId=['id'], name, DisplayName, PolicyDefinitionId, PolicyDisplayName, InitiativeCategory, PolicyCategory
