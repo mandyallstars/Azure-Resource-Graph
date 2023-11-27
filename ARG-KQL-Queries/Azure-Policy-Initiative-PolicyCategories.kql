@@ -1,0 +1,16 @@
+policyresources
+| where ['id'] == "/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8"
+| extend propertiesJSON = parse_json(properties)
+| extend DisplayName = propertiesJSON.displayName
+| extend InitiativeCategory = propertiesJSON.metadata.category
+| extend PolicyDefinitions = propertiesJSON.policyDefinitions
+| mv-expand PolicyDefinitions
+| extend PolicyDefinitionId = tostring(PolicyDefinitions.policyDefinitionId)
+| join kind=leftouter (policyresources
+| where type == "microsoft.authorization/policydefinitions"
+//| where ['kind'] == "policyDefinitions"
+| extend PropertiesJSON = parse_json(properties)
+| extend PolicyCategory = tostring(PropertiesJSON.metadata.category)
+| extend PolicyDisplayName = PropertiesJSON.displayName
+| project tostring(['id']), PolicyCategory, PolicyDisplayName) on $left.PolicyDefinitionId == $right.['id']
+| project InitiativeId=['id'], name, DisplayName, PolicyId=id1, PolicyDefinitionId, PolicyDisplayName, InitiativeCategory, PolicyCategory
