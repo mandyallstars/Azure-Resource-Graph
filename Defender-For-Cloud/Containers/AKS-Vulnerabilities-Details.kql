@@ -1,0 +1,42 @@
+securityresources 
+                | where type =~ "microsoft.security/assessments/subassessments"
+                | extend assessmentKey=extract(@"(?i)providers/Microsoft.Security/assessments/([^/]*)", 1, id)
+                | where assessmentKey == "c609cf0f-71ab-41e9-a3c6-9a1f7fe1b8d5"
+                | where properties.status.code == "Unhealthy"
+                | extend parentResourceId = tostring(properties.additionalData.clusterDetails.clusterResourceId)
+                | extend resourceId = tostring(properties.resourceDetails.id)
+                | extend assessedResourceType = tostring(properties.additionalData.assessedResourceType)
+                | extend publishedDate = tostring(properties.additionalData.vulnerabilityDetails.publishedDate)
+                | extend image = strcat(tostring(properties.additionalData.artifactDetails.registryHost), "/", tostring(properties.additionalData.artifactDetails.repositoryName))
+                | extend workloads = properties.additionalData.kubernetesContext.workloads
+                | mv-expand workloads
+                | extend ownedResources = workloads.ownedResources
+                | mv-expand ownedResources
+                | extend containers = iff(isnotempty(tostring(ownedResources.containers)), ownedResources.containers, workloads.containers)
+                | mv-expand containers
+                | extend containerName = tostring(containers.name)
+				        | extend controllerName = tostring(workloads.name)
+				        | extend clusterName = tostring(properties.additionalData.clusterDetails.clusterName)
+				        | extend namespace = tostring(workloads.namespace)
+				        | extend workloadType = tostring(workloads.kind)
+                | extend podName = case(tostring(ownedResources.kind)=="Pod", tostring(ownedResources.name), 
+                                        workloadType=="Pod", tostring(workloads.name) , "Unknown")
+                | extend cveId = tostring(properties.additionalData.vulnerabilityDetails.cveId),
+                        cveScore = tostring(properties.additionalData.cvssV30Score),
+                        subAssessmentDescription=tostring(properties.description),
+                        subAssessmentRemediation=tostring(properties.remediation),
+                        subAssessmentCategory=tostring(properties.additionalData.softwareDetails.category),
+                        severity = tostring(properties.additionalData.vulnerabilityDetails.severity),
+                        status=tostring(properties.status.code),
+                        additionalData=tostring(properties.additionalData)
+                | where severity == "Critical" // filter by Severity
+                | project resourceGroup, image, containerName, podName, controllerName, clusterName, namespace, workloadType, cveId, cveScore, severity, publishedDate, subAssessmentCategory, subAssessmentDescription, subAssessmentRemediation, workloads
+                | order by cveScore desc, publishedDate asc // sort by Cve Score
+                //| summarize numOfResources=dcount(resourceId), timeGenerated=arg_max(todatetime(properties.timeGenerated), additionalData) by assessmentKey, cveId, subAssessmentCategory, severity, status, subAssessmentDescription, subAssessmentRemediation
+                //| extend critical = iff(severity == "Critical", 5,0), 
+                //        high = iff(severity == "High", 4,0), 
+                //        medium = iff(severity == "Medium", 3, 0), 
+                //        low = iff(severity == "Low", 2 ,0),
+                //        unknown = iff(severity == "Unknown", 1, 0)
+                //| extend all = critical + high + medium + low + unknown
+                //| order by all desc//, numOfResources desc
