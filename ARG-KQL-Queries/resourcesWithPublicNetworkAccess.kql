@@ -1,0 +1,6 @@
+resources
+| extend publicNetworkAccess = tostring(properties.publicNetworkAccess)
+| extend networkAccessPolicy = tostring(properties.networkAccessPolicy)
+| where subscriptionId in ("<subID>", "<subID2>")
+//| distinct publicNetworkAccess, networkAccessPolicy
+| where publicNetworkAccess in ('Enabled', 'true') or networkAccessPolicy == 'AllowAll'
