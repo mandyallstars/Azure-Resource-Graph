@@ -1,0 +1,15 @@
+//let cveId = '<CVEID>';
+securityresources
+| where type =~ 'microsoft.security/assessments/subassessments'
+//| where tostring(properties) has_any ('<CVEID>', '<CVEID2>') //use this to understand data structure if it differs
+| extend addtnlData = properties.additionalData, vulnDetails = properties.additionalData.vulnerabilityDetails
+| extend cveId = vulnDetails.cveId
+| extend  ResourceId = properties.resourceDetails.id, ResourceProvider = tostring(properties.resourceDetails.ResourceProvider),
+ResourceName = tostring(properties.resourceDetails.ResourceName), ResourceType = tostring(properties.resourceDetails.ResourceType),
+RepoName = tostring(addtnlData.artifactDetails.repositoryName), lastPushedToRegistryUTC = tostring(addtnlData.artifactDetails.lastPushedToRegistryUTC),
+artifactType = tostring(addtnlData.artifactDetails.artifactType), digest = tostring(addtnlData.artifactDetails.digest),
+tags = tostring(addtnlData.artifactDetails.tags),
+Severity = properties.status.severity, Status = properties.status.code
+| where cveId has_any ('<CVEID>', '<CVEID2>')
+| where Status == 'Unhealthy'
+| project ['id'], ResourceId, ResourceName, ResourceProvider, ResourceType, RepoName, lastPushedToRegistryUTC, artifactType, digest, tags, cveId, Severity, Status, properties, addtnlData
