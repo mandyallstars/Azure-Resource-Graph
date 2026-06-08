@@ -1,0 +1,9 @@
+// Name: calculate-compute-resources-per-subscription
+// Purpose: Calculates the number of unique compute resources per subscription across the whole tenant. Output depends on the access of the user running the query.
+// Product: Resource Graph Explorer
+
+resources
+| where ['type'] in ("microsoft.compute/virtualmachines", "microsoft.compute/virtualmachinescalesets", "microsoft.hybridcompute/machines", "microsoft.containerinstance/containergroups", "microsoft.containerservice/managedclusters", "microsoft.web/sites")
+| extend type = case(type =~ "microsoft.web/sites" and ['kind'] contains "functionapp", "Function App", ['type'])
+| summarize dcount(['id']) by subscriptionId, type//, ServiceType
+| order by type desc, subscriptionId asc, dcount_id desc
